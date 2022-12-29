@@ -11,14 +11,14 @@ from . import _log
 PORT = 8728
 SSL_PORT = 8729
 
-USER = 'admin'
-PASSWORD = ''
+USER = "admin"
+PASSWORD = ""
 
 USE_SSL = False
 
 VERBOSE = False  # Whether to print API conversation width the router. Useful for debugging
-VERBOSE_LOGIC = 'OR'  # Whether to print and save verbose log to file. AND - print and save, OR - do only one.
-VERBOSE_FILE_MODE = 'w'  # Weather to create new file ('w') for log or append to old one ('a').
+VERBOSE_LOGIC = "OR"  # Whether to print and save verbose log to file. AND - print and save, OR - do only one.
+VERBOSE_FILE_MODE = "w"  # Weather to create new file ('w') for log or append to old one ('a').
 
 CONTEXT = ssl.create_default_context()  # It is possible to predefine context for SSL socket
 CONTEXT.check_hostname = False
@@ -45,8 +45,8 @@ class RouterOSTrapError(Exception):
 
 class Api:
 
-    def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False,
-                 verbose=VERBOSE, context=CONTEXT, timeout=TIMEOUT):
+    def __init__(self, address, user=USER, password=PASSWORD, use_ssl=USE_SSL, port=False, verbose=VERBOSE,
+                 context=CONTEXT, timeout=TIMEOUT):
 
         self.address = address
         self.user = user
@@ -67,18 +67,20 @@ class Api:
 
         # Create Log instance to save or print verbose logs
         self.log = _log.Log(verbose, VERBOSE_LOGIC, VERBOSE_FILE_MODE)
-        self.log('')
-        self.log('#-----------------------------------------------#')
-        self.log('API IP - {}, USER - {}'.format(address, user))
+        self.log("")
+        self.log("#-----------------------------------------------#")
+        self.log("API IP - {}, USER - {}".format(address, user))
         self.sock = None
         self.connection = None
         self.open_socket()
         self.login()
-        self.log('Instance of Api created')
+        self.log("Instance of Api created")
         self.is_alive()
 
     def open_socket(self):
-        """Open socket connection with router and wrap with SSL if needed."""
+        """
+        Open socket connection with router and wrap with SSL if needed.
+        """
 
         for res in socket.getaddrinfo(self.address, self.port, socket.AF_UNSPEC, socket.SOCK_STREAM):
             af, socktype, proto, canonname, sa = res
@@ -92,39 +94,42 @@ class Api:
             self.connection = self.sock.connect(sa)
 
         except OSError:
-            raise CreateSocketError('Error: API failed to connect to socket. Host: {}, port: {}.'.format(self.address,
+            raise CreateSocketError("Error: API failed to connect to socket. Host: {}, port: {}.".format(self.address,
                                                                                                          self.port))
 
         if self.use_ssl:
             self.sock = self.context.wrap_socket(self.sock)
 
-        self.log('API socket connection opened.')
+        self.log("API socket connection opened.")
 
     def login(self):
-        """Login API connection into RouterOS."""
+        """
+        Login API connection into RouterOS.
+        """
 
-        sentence = ['/login', '=name=' + self.user, '=password=' + self.password]
+        sentence = ["/login", "=name=" + self.user, "=password=" + self.password]
         reply = self.communicate(sentence)
-        if len(reply[0]) == 1 and reply[0][0] == '!done':
+        if len(reply[0]) == 1 and reply[0][0] == "!done":
             # If login process was successful
-            self.log('Logged in successfully!')
+            self.log("Logged in successfully!")
             return reply
-        elif 'Error' in reply:
+        elif "Error" in reply:
             # Else if there was some kind of error during login process
-            self.log('Error in login process - {}'.format(reply))
-            raise LoginError('Login ' + reply)
-        elif len(reply[0]) == 2 and reply[0][1][0:5] == '=ret=':
+            self.log("Error in login process - {}".format(reply))
+            raise LoginError("Login " + reply)
+        elif len(reply[0]) == 2 and reply[0][1][0:5] == "=ret=":
             # Else if RouterOS uses old API login method, code continues with old method
-            self.log('Using old login process.')
-            md5 = hashlib.md5(('\x00' + self.password).encode('utf-8'))
+            self.log("Using old login process.")
+            md5 = hashlib.md5(("\x00" + self.password).encode("utf-8"))
             md5.update(binascii.unhexlify(reply[0][1][5:]))
-            sentence = ['/login', '=name=' + self.user, '=response=00'
-                        + binascii.hexlify(md5.digest()).decode('utf-8')]
-            self.log('Logged in successfully!')
+            sentence = ["/login", "=name=" + self.user, "=response=00" + binascii.hexlify(md5.digest()).decode("utf-8")]
+            self.log("Logged in successfully!")
             return self.communicate(sentence)
 
     def communicate(self, sentence_to_send):
-        """Sending data to router and expecting something back."""
+        """
+        Sending data to router and expecting something back.
+        """
 
         # There is specific way of sending word length in RouterOS API.
         # See RouterOS API Wiki for more info.
@@ -143,16 +148,17 @@ class Api:
                 num_of_bytes = 4  # For words smaller than 268435456
             elif length_to_send < 0x100000000:
                 num_of_bytes = 4  # For words smaller than 4294967296
-                self.sock.sendall(b'\xF0')
+                self.sock.sendall(b"\xF0")
             else:
-                raise WordTooLong('Word is too long. Max length of word is 4294967295.')
-            self.sock.sendall(length_to_send.to_bytes(num_of_bytes, byteorder='big'))
+                raise WordTooLong("Word is too long. Max length of word is 4294967295.")
+            self.sock.sendall(length_to_send.to_bytes(num_of_bytes, byteorder="big"))
 
             # Actually I haven't successfully sent words larger than approx. 65520.
             # Probably it is some RouterOS limitation of 2^16.
 
         def receive_length():
-            """The same logic applies for receiving word length from RouterOS side.
+            """
+            The same logic applies for receiving word length from RouterOS side.
             See RouterOS API Wiki for more info.
             """
 
@@ -163,23 +169,23 @@ class Api:
             # Otherwise if it is larger, then word size is encoded in multiple bytes and we must receive them all to
             # get the whole word size.
 
-            if r < b'\x80':
-                r = int.from_bytes(r, byteorder='big')
-            elif r < b'\xc0':
+            if r < b"\x80":
+                r = int.from_bytes(r, byteorder="big")
+            elif r < b"\xc0":
                 r += self.sock.recv(1)
-                r = int.from_bytes(r, byteorder='big')
+                r = int.from_bytes(r, byteorder="big")
                 r -= 0x8000
-            elif r < b'\xe0':
+            elif r < b"\xe0":
                 r += self.sock.recv(2)
-                r = int.from_bytes(r, byteorder='big')
+                r = int.from_bytes(r, byteorder="big")
                 r -= 0xC00000
-            elif r < b'\xf0':
+            elif r < b"\xf0":
                 r += self.sock.recv(3)
-                r = int.from_bytes(r, byteorder='big')
+                r = int.from_bytes(r, byteorder="big")
                 r -= 0xE0000000
-            elif r == b'\xf0':
+            elif r == b"\xf0":
                 r = self.sock.recv(4)
-                r = int.from_bytes(r, byteorder='big')
+                r = int.from_bytes(r, byteorder="big")
 
             return r
 
@@ -188,17 +194,17 @@ class Api:
             rcv_length = receive_length()  # Get the size of the word
 
             while rcv_length != 0:
-                received = b''
+                received = b""
                 while rcv_length > len(received):
                     rec = self.sock.recv(rcv_length - len(received))
-                    if rec == b'':
-                        raise RuntimeError('socket connection broken')
+                    if rec == b"":
+                        raise RuntimeError("socket connection broken")
                     received += rec
-                received = received.decode('utf-8', 'backslashreplace')
-                self.log('<<< {}'.format(received))
+                received = received.decode("utf-8", "backslashreplace")
+                self.log("<<< {}".format(received))
                 rcv_sentence.append(received)
                 rcv_length = receive_length()  # Get the size of the next word
-            self.log('')
+            self.log("")
             return rcv_sentence
 
         # Sending part of conversation
@@ -208,24 +214,26 @@ class Api:
         # Then, the word itself.
         for word in sentence_to_send:
             send_length(word)
-            self.sock.sendall(word.encode('utf-8'))  # Sending the word
-            self.log('>>> {}'.format(word))
-        self.sock.sendall(b'\x00')  # Send zero length word to mark end of the sentence
-        self.log('')
+            self.sock.sendall(word.encode("utf-8"))  # Sending the word
+            self.log("{}".format(word))
+        self.sock.sendall(b"\x00")  # Send zero length word to mark end of the sentence
+        self.log("")
 
         # Receiving part of the conversation
 
         # Will continue receiving until receives '!done' or some kind of error (!trap).
         # Everything will be appended to paragraph variable, and then returned.
         paragraph = []
-        received_sentence = ['']
-        while received_sentence[0] != '!done':
+        received_sentence = [""]
+        while received_sentence[0] != "!done":
             received_sentence = read_sentence()
             paragraph.append(received_sentence)
         return paragraph
 
     def talk(self, message):
-        """Initiate a conversation with the router."""
+        """
+        Initiate a conversation with the router.
+        """
 
         # It is possible for message to be string, tuple or list containing multiple strings or tuples
         if type(message) == str or type(message) == tuple:
@@ -236,7 +244,7 @@ class Api:
                 reply.append(self.send(sentence))
             return reply
         else:
-            raise TypeError('talk() argument must be str or tuple containing str or list containing str or tuples')
+            raise TypeError("talk() argument must be str or tuple containing str or list containing str or tuples")
 
     def send(self, sentence):
         # If sentence is string, not tuples of strings, it must be divided in words
@@ -245,7 +253,7 @@ class Api:
         reply = self.communicate(sentence)
 
         # If RouterOS returns error from command that was sent
-        if '!trap' in reply[0][0]:
+        if "!trap" in reply[0][0]:
             # You can comment following line out if you don't want to raise an error in case of !trap
             raise RouterOSTrapError("\nCommand: {}\nReturned an error: {}".format(sentence, reply))
             pass
@@ -255,12 +263,14 @@ class Api:
         nice_reply = []
         for m in range(len(reply) - 1):
             nice_reply.append({})
-            for k, v in (x[1:].split('=', 1) for x in reply[m][1:]):
+            for k, v in (x[1:].split("=", 1) for x in reply[m][1:]):
                 nice_reply[m][k] = v
         return nice_reply
 
     def is_alive(self) -> bool:
-        """Check if socket is alive and router responds."""
+        """
+        Check if socket is alive and router responds.
+        """
 
         # Check if socket is open in this end
         try:
@@ -271,7 +281,7 @@ class Api:
 
         # Check if we can send and receive through socket
         try:
-            self.talk('/system/identity/print')
+            self.talk("/system/identity/print")
 
         except (socket.timeout, IndexError, BrokenPipeError):
             self.log("Router does not respond, closing socket.")
@@ -283,11 +293,12 @@ class Api:
         return True
 
     def create_connection(self):
-        """Create API connection
-
-        1. Open socket
-        2. Log into router
         """
+        Create API connection
+        1. Open socket.
+        2. Log into router.
+        """
+
         self.open_socket()
         self.login()
 

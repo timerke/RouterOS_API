@@ -22,8 +22,8 @@ class Log:
 
         # If logging to file is needed, configure it
         if path is not True and type(path) == str:
-            logging.basicConfig(filename=path, filemode=file_mode,
-                                format='%(asctime)s - %(message)s', level=logging.DEBUG)
+            logging.basicConfig(filename=path, filemode=file_mode, format="%(asctime)s - %(message)s",
+                                level=logging.DEBUG)
 
         # Define different log actions that can be used
         def nothing(message):
@@ -46,10 +46,10 @@ class Log:
         elif path is True:
             self.func = to_stdout
 
-        elif path is not True and type(path) == str and logic == 'OR':
+        elif path is not True and type(path) == str and logic == "OR":
             self.func = to_file
 
-        elif path is not True and type(path) == str and logic == 'AND':
+        elif path is not True and type(path) == str and logic == "AND":
             self.func = both
         else:
             self.func = to_stdout

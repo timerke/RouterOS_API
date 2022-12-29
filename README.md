@@ -2,7 +2,7 @@
 
 Python API for MikroTik RouterOS. Simple and easy to use.
 
-> **WARNING** for old users: 
+> **WARNING** for old users:
 > 
 > Project has changes it's structure and import signature.
 
@@ -29,8 +29,8 @@ python -m pip install laiarturs-ros-api
 ```python
 import ros_api
 
-router = ros_api.Api('192.168.88.1')
-r = router.talk('/system/identity/print')
+router = ros_api.Api("192.168.88.1")
+r = router.talk("/system/identity/print")
 print(r)
 ```
 
@@ -47,12 +47,13 @@ print(r)
 ```python
 import ros_api
 
-router = ros_api.Api('10.21.0.100', user='Bob', password='St4ong0nE', port=15811)
-r = router.talk('/ip/address/print')
+router = ros_api.Api("10.21.0.100", user="Bob", password="St4ong0nE", port=15811)
+r = router.talk("/ip/address/print")
 print(r)
 ```
 
 *Output:*
+
 ```
 [{'.id': '*5', 'address': '10.21.0.100/24', 'network': '10.21.0.0','interface': 'ether1',
 'actual-interface': 'ether1', 'invalid': 'false', 'dynamic': 'false', 'disabled': 'false'}]
@@ -64,6 +65,7 @@ print(r)
 On RouterOS router create **certificate** and assign it to **api-ssl** service.
 
 *RouterOS:*
+
 ```
 /certificate
 add name=ca-template common-name=myCa key-usage=key-cert-sign,crl-sign
@@ -77,15 +79,17 @@ set [find name=api-ssl] certificate=server
 More info: [MikroTik Wiki](https://wiki.mikrotik.com/wiki/Manual:Create_Certificates).
 
 *Python code:*
+
 ```python
 import ros_api
 
-router = ros_api.Api('10.21.0.100', user='SysAdmin', password='Meeseeks', verbose=True, use_ssl=True)
-r = router.talk('/interface/wireless/enable\n=numbers=0')
+router = ros_api.Api("10.21.0.100", user="SysAdmin", password="Meeseeks", verbose=True, use_ssl=True)
+r = router.talk("/interface/wireless/enable\n=numbers=0")
 print(r)
 ```
 
 *Output:*
+
 ```
 >>>  /login
 >>>  =name=SysAdmin
@@ -121,7 +125,7 @@ By initialising this class it creates socket, connects and logs in.
 *Python code:*
 
 ```python
-router = Api(address='192.168.10.1', user='Juri', password='L0vE$aun@', 
+router = Api(address="192.168.10.1", user="Juri", password="L0vE$aun@", 
              use_ssl=True, port=8730, verbose=False, context=ctx, timeout=0.5)
 ```
 
@@ -134,22 +138,20 @@ Argument  | Description
 `message` | `str`, `tuple` or `list` of strings or tuples. It is possible to send multiple commands bundled in a list.
 
 *Python code:*
+
 ```python
-message = [('/system/note/set', '=note=Multi line\nnote for the Router!'), '/system/note/print']
+message = [("/system/note/set", "=note=Multi line\nnote for the Router!"), "/system/note/print"]
 r = router.talk(message)
 print(r)
 ```
 *Output:*
+
 ```
 [[], [{'show-at-login': 'true', 'note': 'Multi line\nnote for the Router!'}]]
 ```
 
-If property values you want to send to router contains spaces or linebreaks, sentence must be divided in words and then
-passed to talk() as `tuple`. Otherwise you can send sentences as strings and it will be divided in words where there is 
-space or linebreak.
+If property values you want to send to router contains spaces or linebreaks, sentence must be divided in words and then passed to talk() as `tuple`. Otherwise you can send sentences as strings and it will be divided in words where there is space or linebreak.
 
-Method *talk()* returns `list` containing replies from router. In this case there are two replies, because *message* 
-contained two sentences. Actions like *set*, *add*, *enable* etc. usually returns empty list, however, *print*, *monitor*
-and others returns `list` with `dict` inside containing reply from router.
+Method *talk()* returns `list` containing replies from router. In this case there are two replies, because *message* contained two sentences. Actions like *set*, *add*, *enable* etc. usually returns empty list, however, *print*, *monitor* and others returns `list` with `dict` inside containing reply from router.
 
 Messages use RouterOS API syntax. More info: [MikroTik Wiki](https://wiki.mikrotik.com/wiki/Manual:API).
